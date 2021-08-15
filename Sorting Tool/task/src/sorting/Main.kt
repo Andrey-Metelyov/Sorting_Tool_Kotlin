@@ -1,5 +1,7 @@
 package sorting
 
+import java.io.File
+import java.lang.NumberFormatException
 import java.util.*
 
 fun main(args: Array<String>) {
@@ -7,121 +9,144 @@ fun main(args: Array<String>) {
         return
     }
     val parameters = getParameters(args)
+    if (parameters.containsKey("-sortingType") && parameters["-sortingType"] == null) {
+        println("No sorting type defined!")
+        return
+    }
     val sortingType = parameters["-sortingType"] ?: "natural"
-    val dataType = parameters["-dataType"]
+    if (parameters.containsKey("-dataType") && parameters["-dataType"] == null) {
+        println("No data type defined!")
+        return
+    }
+    val dataType = parameters["-dataType"] ?: "word"
+    val inputFile = parameters["-inputFile"]
+    val outputFile = parameters["-outputFile"]
 
     when (dataType) {
         "word" -> {
-            val collection = readWords()
-            println("Total words: ${collection.size}.")
-            if (sortingType == "natural") {
-                println("Sorted data: ${collection.sorted().joinToString(" ")}")
-            } else {
-                val sorted = collection.map { it to collection.count { value -> value == it } }
-                    .toSet()
-                    .sortedWith(compareBy({ it.second }, { it.first }))
-                val total = collection.size
-                sorted.forEach { (key, value) ->
-                    println("$key: $value time(s), ${value * 100 / total}%")
-                }
-            }
+            val collection = readWords(inputFile)
+            processWords(collection, sortingType, outputFile)
         }
         "long" -> {
-            val collection = readLongs()
-            println("Total numbers: ${collection.size}.")
-            if (sortingType == "natural") {
-                println("Sorted data: ${collection.sorted().joinToString(" ")}")
-            } else {
-                val sorted = collection.map { it to collection.count { value -> value == it } }
-                    .toSet()
-                    .sortedWith(compareBy({ it.second }, { it.first }))
-                val total = collection.size
-                sorted.forEach { (key, value) ->
-                    println("$key: $value time(s), ${value * 100 / total}%")
-                }
-            }
+            val collection = readLongs(inputFile)
+            processLongs(collection, sortingType, outputFile)
         }
         "line" -> {
-            val collection = readLines()
-            println("Total lines: ${collection.size}.")
-            if (sortingType == "natural") {
-                println("Sorted data:\n${collection.sorted().joinToString("\n")}")
-            } else {
-                val sorted = collection.map { it to collection.count { value -> value == it } }
-                    .toSet()
-                    .sortedWith(compareBy({ it.second }, { it.first }))
-                val total = collection.size
-                sorted.forEach { (key, value) ->
-                    println("$key: $value time(s), ${value * 100 / total}%")
-                }
-            }
+            val collection = readLines(inputFile)
+            processLines(collection, sortingType, outputFile)
         }
     }
 }
 
-fun getParameters(args: Array<String>): Map<String, String> {
+fun getParameters(args: Array<String>): Map<String, String?> {
     System.err.println(args.joinToString())
-    val result = mutableMapOf<String, String>()
+    val result = mutableMapOf<String, String?>()
     var index = 0
     while (index < args.size) {
-        result[args[index++]] = args[index++]
+        when (val name = args[index++]) {
+            "-sortingType", "-dataType", "-inputFile", "-outputFile" -> {
+                val value = if (index < args.size) args[index++] else null
+                result[name] = value
+                System.err.println("$name = $value")
+            }
+            else -> {
+                println("\"$name\" is not a valid parameter. It will be skipped.")
+            }
+        }
+
     }
     return result
 }
 
-fun processWords() {
-    val words = readWords()
-    println("Total words: ${words.size}.")
-    val max = words.maxByOrNull { it.length }
-    val count = words.count { it == max }
-    val percent = (count * 100 / words.size)
-    println("The longest word: $max ($count time(s), $percent).")
+fun processWords(collection: List<String>, sortingType: String, outputFile: String?) {
+    outputResult("Total words: ${collection.size}.", outputFile)
+    if (sortingType == "natural") {
+        outputResult("Sorted data: ${collection.sorted().joinToString(" ")}", outputFile)
+    } else {
+        val sorted = collection.map { it to collection.count { value -> value == it } }
+            .toSet()
+            .sortedWith(compareBy({ it.second }, { it.first }))
+        val total = collection.size
+        sorted.forEach { (key, value) ->
+            outputResult("$key: $value time(s), ${value * 100 / total}%", outputFile)
+        }
+    }
 }
 
-private fun readWords(): List<String> {
+fun outputResult(line: String, outputFile: String?) {
+    System.err.println("($outputFile) $line")
+    if (outputFile == null) {
+        println(line)
+    } else {
+        System.err.println("use $outputFile as output")
+        File(outputFile).appendText(line.plus(System.lineSeparator()))
+    }
+}
+
+private fun readWords(inputFile: String?): List<String> {
     val words = mutableListOf<String>()
-    val scanner = Scanner(System.`in`)
+    val scanner = if (inputFile != null) Scanner(File(inputFile)) else Scanner(System.`in`)
 
     while (scanner.hasNext()) {
         words.add(scanner.next())
     }
+    scanner.close()
     return words
 }
 
-fun processLines() {
-    val lines = readLines()
-    println("Total lines: ${lines.size}.")
-    val max = lines.maxByOrNull { it.length }
-    val count = lines.count { it == max }
-    val percent = (count * 100 / lines.size)
-    println("The longest line:\n$max\n($count time(s), $percent).")
+fun processLines(collection: List<String>, sortingType: String, outputFile: String?) {
+    outputResult("Total lines: ${collection.size}.", outputFile)
+    if (sortingType == "natural") {
+        outputResult("Sorted data:\n${collection.sorted().joinToString("\n")}", outputFile)
+    } else {
+        val sorted = collection.map { it to collection.count { value -> value == it } }
+            .toSet()
+            .sortedWith(compareBy({ it.second }, { it.first }))
+        val total = collection.size
+        sorted.forEach { (key, value) ->
+            outputResult("$key: $value time(s), ${value * 100 / total}%", outputFile)
+        }
+    }
 }
 
-private fun readLines(): List<String> {
+private fun readLines(inputFile: String?): List<String> {
     val lines = mutableListOf<String>()
-    val scanner = Scanner(System.`in`)
+    val scanner = if (inputFile != null) Scanner(File(inputFile)) else Scanner(System.`in`)
 
     while (scanner.hasNext()) {
         lines.add(scanner.nextLine())
     }
+    scanner.close()
     return lines
 }
 
-fun processLongs() {
-    val numbers = readLongs()
-    println("Total numbers: ${numbers.size}.")
-    val max = numbers.maxOrNull()
-    val count = numbers.count { it == max }
-    val percent = (count * 100 / numbers.size)
-    println("The greatest number: $max ($count time(s), $percent).")
+fun processLongs(collection: List<Long>, sortingType: String, outputFile: String?) {
+    outputResult("Total numbers: ${collection.size}.", outputFile)
+    if (sortingType == "natural") {
+        outputResult("Sorted data: ${collection.sorted().joinToString(" ")}", outputFile)
+    } else {
+        val sorted = collection.map { it to collection.count { value -> value == it } }
+            .toSet()
+            .sortedWith(compareBy({ it.second }, { it.first }))
+        val total = collection.size
+        sorted.forEach { (key, value) ->
+            outputResult("$key: $value time(s), ${value * 100 / total}%", outputFile)
+        }
+    }
 }
 
-private fun readLongs(): List<Int> {
-    val numbers = mutableListOf<Int>()
-    val scanner = Scanner(System.`in`)
+private fun readLongs(inputFile: String?): List<Long> {
+    val numbers = mutableListOf<Long>()
+    val scanner = if (inputFile != null) Scanner(File(inputFile)) else Scanner(System.`in`)
 
     while (scanner.hasNext()) {
-        numbers.add(scanner.nextInt())
+        val number = scanner.next()
+        try {
+            numbers.add(number.toLong())
+        } catch (e: NumberFormatException) {
+            println("$number is not a long. It will be skipped.")
+        }
     }
+    scanner.close()
     return numbers
 }
