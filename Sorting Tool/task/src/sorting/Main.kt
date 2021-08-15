@@ -3,6 +3,15 @@ package sorting
 import java.util.*
 
 fun main(args: Array<String>) {
+    if (args.isEmpty()) {
+        return
+    }
+    if (args.contains("-sortIntegers")) {
+        val numbers = readLongs()
+        println("Total numbers: ${numbers.size}.")
+        println("Sorted data: ${numbers.sorted().joinToString(" ")}")
+        return
+    }
     if (args.size < 2) {
         return
     }
@@ -10,13 +19,13 @@ fun main(args: Array<String>) {
         return
     }
     when (args[1]) {
-        "long" -> readLongs()
-        "line" -> readLines()
-        "word" -> readWords()
+        "long" -> processLongs()
+        "line" -> processLines()
+        "word" -> processWords()
     }
 }
 
-fun readWords() {
+fun processWords() {
     val words = mutableListOf<String>()
     val scanner = Scanner(System.`in`)
 
@@ -30,7 +39,7 @@ fun readWords() {
     println("The longest word: $max ($count time(s), $percent).")
 }
 
-fun readLines() {
+fun processLines() {
     val lines = mutableListOf<String>()
     val scanner = Scanner(System.`in`)
 
@@ -44,16 +53,21 @@ fun readLines() {
     println("The longest line:\n$max\n($count time(s), $percent).")
 }
 
-fun readLongs() {
+fun processLongs() {
+    val numbers = readLongs()
+    println("Total numbers: ${numbers.size}.")
+    val max = numbers.maxOrNull()
+    val count = numbers.count { it == max }
+    val percent = (count * 100 / numbers.size)
+    println("The greatest number: $max ($count time(s), $percent).")
+}
+
+private fun readLongs(): List<Int> {
     val numbers = mutableListOf<Int>()
     val scanner = Scanner(System.`in`)
 
     while (scanner.hasNext()) {
         numbers.add(scanner.nextInt())
     }
-    println("Total numbers: ${numbers.size}.")
-    val max = numbers.maxOrNull()
-    val count = numbers.count { it == max }
-    val percent = (count * 100 / numbers.size)
-    println("The greatest number: $max ($count time(s), $percent).")
+    return numbers
 }
